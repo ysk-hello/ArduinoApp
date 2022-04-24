@@ -117,5 +117,31 @@ static void TestEventsCallback(ArduinoBoard board)
 /// </summary>
 static void TestAnalogCallback(ArduinoBoard board)
 {
-    throw new NotSupportedException();
+    var analogController = board.CreateAnalogController(0);
+    board.SetAnalogPinSamplingInterval(TimeSpan.FromMilliseconds(1000));
+    var pin = analogController.OpenPin(SENSOR_PIN);
+    pin.EnableAnalogValueChangedEvent(null, 0);
+
+    pin.ValueChanged += (sender, e) =>
+    {
+        if (e.PinNumber == SENSOR_PIN)
+        {
+            ElectricPotential voltage = pin.ReadVoltage();
+
+            var temperature = e.Value.Volts * 100;  // 出力電圧：10.0 mV/℃
+            Console.WriteLine($"{temperature.ToString("#.0")}℃");   // 温度出力
+        }
+    };
+
+    Console.WriteLine("Waiting for changes on the analog input");
+    while (!Console.KeyAvailable)
+    {
+        // Nothing to do
+        Thread.Sleep(100);
+    }
+
+    Console.ReadKey();
+    pin.DisableAnalogValueChangedEvent();
+    pin.Dispose();
+    analogController.Dispose();
 }
