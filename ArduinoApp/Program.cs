@@ -77,7 +77,39 @@ static void TestGpio(ArduinoBoard board)
 /// </summary>
 static void TestEventsCallback(ArduinoBoard board)
 {
-    throw new NotSupportedException();
+    var gpioController = board.CreateGpioController();
+
+    // Opening GPIO
+    gpioController.OpenPin(BUTTON_PIN);
+    gpioController.SetPinMode(BUTTON_PIN, PinMode.InputPullUp);
+    gpioController.OpenPin(LED_PIN);
+    gpioController.SetPinMode(LED_PIN, PinMode.Output);
+
+    Console.WriteLine($"Setting up events on GPIO{BUTTON_PIN} for rising and falling");
+
+    // EventHandler
+    PinChangeEventHandler myCallBack = (sender, e) =>
+    {
+        Console.WriteLine(e.ChangeType);
+        gpioController.Write(LED_PIN,
+            e.ChangeType == PinEventTypes.Falling ? PinValue.High : PinValue.Low);  // 点滅
+    };
+
+    // Add event
+    gpioController.RegisterCallbackForPinValueChangedEvent(BUTTON_PIN, PinEventTypes.Falling | PinEventTypes.Rising, myCallBack);
+
+    Console.WriteLine("Event setup, press a key to remove the event");
+    while (!Console.KeyAvailable)
+    {
+        // Nothing to do
+        Thread.Sleep(100);
+    }
+
+    Console.ReadKey();
+
+    // Remove event
+    gpioController.UnregisterCallbackForPinValueChangedEvent(BUTTON_PIN, myCallBack);
+    gpioController.Dispose();
 }
 
 /// <summary>
